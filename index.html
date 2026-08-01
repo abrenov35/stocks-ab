@@ -1214,31 +1214,51 @@
         }
 
         function loadCategories() {
-            fetch(API_URL + '?action=getCategories')
-                .then(response => response.json())
-                .then(categories => {
-                    let html = '';
-                    categories.forEach(cat => {
-                        html += `
-                            <div class="category" onclick="showCategoryProducts('${cat}')">
-                                <div class="category-name">${cat}</div>
-                                <div class="category-value">--€</div>
-                            </div>
-                        `;
-                    });
-                    document.getElementById('categories').innerHTML = html;
-                    
-                    let catButtons = '';
-                    categories.forEach(cat => {
-                        catButtons += `<button class="category-btn" onclick="showCategoryProducts('${cat}')" style="background: #f0f7ff; border: 1px solid #2a5298; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; color: #2a5298; transition: all 0.2s;">${cat}</button>`;
-                    });
-                    // Sécuriser - catList n'existe plus (modale search supprimée en V1.2.3)
-                    const catListElement = document.getElementById('catList');
-                    if (catListElement) {
-                        catListElement.innerHTML = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%;">' + catButtons + '</div>';
+            Promise.all([
+                fetch(API_URL + '?action=getCategories').then(r => r.json()),
+                fetch(API_URL + '?action=getProduits').then(r => r.json())
+            ])
+            .then(([categories, produits]) => {
+                // Calculer la valeur par catégorie
+                const categoryValues = {};
+                categories.forEach(cat => {
+                    categoryValues[cat] = 0;
+                });
+                
+                produits.forEach(prod => {
+                    const qte = parseFloat(prod['Quantité Actuelle']) || 0;
+                    const pmp = parseFloat(prod.PMP) || 0;
+                    const valeur = qte * pmp;
+                    const cat = prod.Catégorie;
+                    if (cat && categoryValues.hasOwnProperty(cat)) {
+                        categoryValues[cat] += valeur;
                     }
-                })
-                .catch(error => console.error('Erreur catégories:', error));
+                });
+                
+                // Afficher les catégories avec valeurs réelles
+                let html = '';
+                categories.forEach(cat => {
+                    const valeur = categoryValues[cat] ? categoryValues[cat].toFixed(2) : '0.00';
+                    html += `
+                        <div class="category" onclick="showCategoryProducts('${cat}')">
+                            <div class="category-name">${cat}</div>
+                            <div class="category-value">${valeur}€</div>
+                        </div>
+                    `;
+                });
+                document.getElementById('categories').innerHTML = html;
+                
+                let catButtons = '';
+                categories.forEach(cat => {
+                    catButtons += `<button class="category-btn" onclick="showCategoryProducts('${cat}')" style="background: #f0f7ff; border: 1px solid #2a5298; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; color: #2a5298; transition: all 0.2s;">${cat}</button>`;
+                });
+                // Sécuriser - catList n'existe plus (modale search supprimée en V1.2.3)
+                const catListElement = document.getElementById('catList');
+                if (catListElement) {
+                    catListElement.innerHTML = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%;">' + catButtons + '</div>';
+                }
+            })
+            .catch(error => console.error('Erreur catégories:', error));
         }
 
         function loadProductsList() {
