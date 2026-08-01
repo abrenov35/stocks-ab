@@ -158,40 +158,92 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.5);
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            animation: fadeIn 0.2s ease;
+            backdrop-filter: blur(2px);
         }
         
         .modal.active { display: flex; }
         
         .modal-content {
-            background: white;
-            border-radius: 10px;
-            padding: 28px;
-            max-width: 480px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+            border-radius: 14px;
+            padding: 32px;
+            max-width: 500px;
             width: 90%;
-            max-height: 80vh;
+            max-height: 85vh;
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            box-shadow: 0 25px 80px rgba(0,0,0,0.25), 0 0 1px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.8);
+            animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .modal-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #2a5298;
+            border-radius: 3px;
+        }
+        
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #1e3c72;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .modal-header { 
-            font-size: 18px; 
+            font-size: 19px; 
             font-weight: 700; 
-            margin-bottom: 20px; 
+            margin-bottom: 25px; 
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 2px solid rgba(42, 82, 152, 0.1);
+            color: #1e3c72;
         }
         
         .close-btn {
-            background: none;
+            background: rgba(42, 82, 152, 0.08);
             border: none;
-            font-size: 24px;
+            font-size: 26px;
             cursor: pointer;
-            color: #999;
+            color: #2a5298;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .close-btn:hover {
+            background: rgba(42, 82, 152, 0.15);
+            transform: rotate(90deg);
         }
         
         .form-group {
@@ -203,57 +255,74 @@
             font-size: 13px;
             font-weight: 600;
             margin-bottom: 8px;
+            color: #1e3c72;
         }
         
         .form-group input,
         .form-group select {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
+            padding: 12px 14px;
+            border: 2px solid #e0e6f2;
+            border-radius: 8px;
             font-size: 13px;
+            background: rgba(255, 255, 255, 0.6);
+            transition: all 0.2s ease;
+            color: #333;
+        }
+        
+        .form-group input::placeholder {
+            color: #999;
         }
         
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
             border-color: #2a5298;
-            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+            box-shadow: 0 0 0 4px rgba(42, 82, 152, 0.12);
+            background: white;
         }
         
         .form-actions {
             display: flex;
-            gap: 10px;
-            margin-top: 25px;
+            gap: 12px;
+            margin-top: 28px;
         }
         
         .form-actions button {
             flex: 1;
-            padding: 11px;
+            padding: 13px 16px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 13px;
-            transition: background 0.3s;
+            font-size: 14px;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
         .form-actions button:first-child {
-            background: #2a5298;
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
             color: white;
+            box-shadow: 0 4px 16px rgba(42, 82, 152, 0.3);
         }
         
         .form-actions button:first-child:hover {
-            background: #1e3c72;
+            box-shadow: 0 6px 24px rgba(42, 82, 152, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .form-actions button:first-child:active {
+            transform: translateY(0);
         }
         
         .form-actions button:last-child {
-            background: #6c757d;
-            color: white;
+            background: #e8ecf1;
+            color: #555;
+            border: 2px solid #d0d8e0;
         }
         
         .form-actions button:last-child:hover {
-            background: #5a6268;
+            background: #d8e0ea;
+            border-color: #b8c4d8;
         }
         
         .products-table {
@@ -289,53 +358,82 @@
         
         .notification {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 14px 18px;
-            border-radius: 6px;
-            font-size: 13px;
+            top: 30px;
+            right: 30px;
+            padding: 16px 22px;
+            border-radius: 10px;
+            font-size: 14px;
             font-weight: 600;
             z-index: 10000;
-            animation: slideIn 0.3s ease;
+            animation: slideInNotif 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            border: 1px solid;
         }
         
         .notification.success {
-            background: #d4edda;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
             color: #155724;
-            border: 1px solid #c3e6cb;
+            border-color: #a8dda8;
         }
         
         .notification.error {
-            background: #f8d7da;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
             color: #721c24;
-            border: 1px solid #f5c6cb;
+            border-color: #f0b1b8;
+        }
+        
+        @keyframes slideInNotif {
+            from {
+                opacity: 0;
+                transform: translateX(400px) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) translateY(0);
+            }
         }
         
         .fournisseur-item {
-            padding: 8px 12px;
-            background: #f0f7ff;
-            border: 1px solid #2a5298;
-            border-radius: 4px;
-            margin-bottom: 6px;
+            padding: 12px 14px;
+            background: linear-gradient(135deg, #e8f1ff 0%, #f0f7ff 100%);
+            border: 2px solid #2a5298;
+            border-radius: 8px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 13px;
+            font-size: 14px;
+            color: #1e3c72;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .fournisseur-item:hover {
+            box-shadow: 0 4px 12px rgba(42, 82, 152, 0.15);
+            transform: translateX(2px);
         }
         
         .fournisseur-item button {
-            background: #dc3545;
+            background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
             color: white;
             border: none;
-            padding: 4px 8px;
-            border-radius: 3px;
+            padding: 6px 12px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
         }
         
         .fournisseur-item button:hover {
-            background: #c82333;
+            background: linear-gradient(135deg, #bb2d3b 0%, #9a2430 100%);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .fournisseur-item button:active {
+            transform: translateY(0);
         }
         
         @keyframes slideIn {
@@ -506,10 +604,6 @@
                     <option>kg</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Emplacement *</label>
-                <input type="text" id="newProdEmplacement" placeholder="Rayon A, Étagère 1, etc.">
-            </div>
             <div class="form-actions">
                 <button onclick="submitNewProduct()">Créer produit</button>
                 <button onclick="toggleNewProduct()">Annuler</button>
@@ -555,7 +649,7 @@
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwusUZCMaCMfxAFlZP4ZRm4Lpv8tVNQBejUsZepNRliM7gLs7DQp2rPWi9_OnDxzJqx/exec';
-        const APP_VERSION = 'V1.0.0';
+        const APP_VERSION = 'V1.0.2';
         const BUILD_ID = new Date().toISOString().slice(0, 10) + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
         
         let productsData = [];
@@ -825,7 +919,8 @@
             
             fetch(API_URL + '?action=addEntry', {
                 method: 'POST',
-                payload: JSON.stringify({
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
                     productId: productId,
                     fournisseur: fournisseur,
                     date: date,
@@ -858,20 +953,20 @@
             const designation = document.getElementById('newProdDesignation').value;
             const categorie = document.getElementById('newProdCategorie').value;
             const unite = document.getElementById('newProdUnite').value;
-            const emplacement = document.getElementById('newProdEmplacement').value;
             
-            if (!designation || !categorie || !unite || !emplacement) {
+            if (!designation || !categorie || !unite) {
                 showNotification('❌ Tous les champs requis', 'error');
                 return;
             }
             
             fetch(API_URL + '?action=addProduct', {
                 method: 'POST',
-                payload: JSON.stringify({
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
                     designation: designation,
                     categorie: categorie,
                     unite: unite,
-                    emplacement: emplacement
+                    emplacement: 'À définir'
                 })
             })
             .then(response => response.json())
