@@ -943,19 +943,19 @@
             }
             
             fournisseurs.push(nom);
-            input.value = '';
-            loadFournisseurs();
-            showNotification('✅ Fournisseur ajouté', 'success');
             localStorage.setItem('ab_stock_fournisseurs', JSON.stringify(fournisseurs));
+            displayFournisseursList();
+            input.value = '';
+            showNotification('✅ Fournisseur ajouté', 'success');
         }
 
         function deleteFournisseur(index) {
             const nom = fournisseurs[index];
             if (confirm(`Supprimer "${nom}" ?`)) {
                 fournisseurs.splice(index, 1);
-                loadFournisseurs();
-                showNotification('✅ Fournisseur supprimé', 'success');
                 localStorage.setItem('ab_stock_fournisseurs', JSON.stringify(fournisseurs));
+                displayFournisseursList();
+                showNotification('✅ Fournisseur supprimé', 'success');
             }
         }
 
