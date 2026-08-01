@@ -36,7 +36,122 @@
             font-weight: 600;
         }
         
-        .header-right { display: flex; gap: 12px; }
+        .header-right { 
+            display: flex; 
+            gap: 12px;
+            position: relative;
+        }
+        
+        .dropdown-categories {
+            position: relative;
+        }
+        
+        .dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .dropdown-arrow {
+            font-size: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .dropdown-toggle[aria-expanded="true"] .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+        
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #e8f0ff;
+            border-radius: 12px;
+            box-shadow: 
+                0 12px 28px rgba(42, 82, 152, 0.15),
+                0 2px 6px rgba(0, 0, 0, 0.08);
+            min-width: 280px;
+            max-width: 350px;
+            margin-top: 8px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.25s cubic-bezier(0.23, 1, 0.320, 1);
+            z-index: 999;
+            backdrop-filter: blur(8px);
+        }
+        
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f4ff;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-add-category {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(76, 175, 80, 0.2);
+        }
+        
+        .btn-add-category:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+        
+        .dropdown-items {
+            max-height: 350px;
+            overflow-y: auto;
+            padding: 6px;
+        }
+        
+        .dropdown-item {
+            padding: 12px 14px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .dropdown-item:hover {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8ecf8 100%);
+            color: #2a5298;
+            padding-left: 18px;
+        }
+        
+        .dropdown-item::before {
+            content: '📁';
+            font-size: 14px;
+        }
         
         .header-btn {
             background: rgba(255,255,255,0.15);
@@ -193,6 +308,29 @@
         
         .btn-add-invendu-large:active {
             transform: translateY(-1px);
+        }
+        
+        .btn-upload-image {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+            white-space: nowrap;
+        }
+        
+        .btn-upload-image:hover {
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .btn-upload-image:active {
+            transform: translateY(0);
         }
         
         .products-grid {
@@ -681,6 +819,22 @@
         <div class="header-right">
             <button class="header-btn" onclick="switchView('stock')">📊 Stock</button>
             <button class="header-btn" onclick="switchView('invendus')">📦 Invendus</button>
+            
+            <!-- DROPDOWN CATEGORIES -->
+            <div class="dropdown-categories">
+                <button class="header-btn dropdown-toggle" onclick="toggleCategoryDropdown()">
+                    📂 Catégories
+                    <span class="dropdown-arrow">▼</span>
+                </button>
+                <div class="dropdown-menu" id="categoryDropdownMenu">
+                    <div class="dropdown-header">
+                        <span>Rechercher par catégorie</span>
+                        <button class="btn-add-category" onclick="openModal('createCategory')" title="Créer catégorie">➕</button>
+                    </div>
+                    <div class="dropdown-items" id="categoryDropdownItems"></div>
+                </div>
+            </div>
+            
             <button class="header-btn" onclick="openModal('search')">🔍 Chercher</button>
             <button class="header-btn" onclick="openModal('entry')">➕ Entrée</button>
             <button class="header-btn" onclick="openModal('docs')">📄 Documents</button>
@@ -793,8 +947,23 @@
             </div>
             
             <div class="form-group">
-                <label>Lien Image Google Drive</label>
-                <input type="text" id="invImageUrl" placeholder="https://drive.google.com/file/d/...">
+                <label>Image *</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                    <button type="button" class="btn-upload-image" onclick="document.getElementById('invImageFile').click()">
+                        📸 Choisir une image
+                    </button>
+                    <input type="file" id="invImageFile" accept="image/*" style="display: none;" onchange="previewImage(event)">
+                    <span id="invImageFileName" style="font-size: 13px; color: #999; align-self: center;">Aucun fichier</span>
+                </div>
+                <div id="invImagePreview" style="display: none; margin-bottom: 12px;">
+                    <img id="invImagePreviewImg" src="" alt="Preview" style="max-width: 100%; max-height: 150px; border-radius: 8px; border: 2px solid #e8f0ff;">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Ou Lien Image Google Drive</label>
+                <input type="text" id="invImageUrl" placeholder="https://drive.google.com/file/d/..." 
+                       onchange="clearImagePreview()">
             </div>
             
             <div class="form-actions">
@@ -956,6 +1125,52 @@
         </div>
     </div>
 
+    <!-- MODAL RECHERCHE CATEGORIE -->
+    <div id="searchCategoryModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <span>📁 Produits par catégorie: <strong id="categoryTitle" style="color: #2a5298;"></strong></span>
+                <button class="close-btn" onclick="closeModal('searchCategory')">×</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="categorySearchInput" placeholder="Filtrer les produits..." 
+                       style="flex: 1;" onkeyup="filterCategoryProducts()">
+            </div>
+            
+            <div id="categoryProductsList" style="max-height: 400px; overflow-y: auto;"></div>
+            
+            <div class="form-actions">
+                <button onclick="closeModal('searchCategory')">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CREER CATEGORIE -->
+    <div id="createCategoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>➕ Créer une nouvelle catégorie</span>
+                <button class="close-btn" onclick="closeModal('createCategory')">×</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Nom de la catégorie *</label>
+                <input type="text" id="newCategoryName" placeholder="ex: Sanitaire, Quincaillerie..." autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" id="newCategoryDesc" placeholder="Description optionnelle">
+            </div>
+            
+            <div class="form-actions">
+                <button onclick="submitCreateCategory()">Créer catégorie</button>
+                <button onclick="closeModal('createCategory')">Annuler</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL DOCUMENTS -->
     <div id="docsModal" class="modal">
         <div class="modal-content">
@@ -969,7 +1184,7 @@
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwusUZCMaCMfxAFlZP4ZRm4Lpv8tVNQBejUsZepNRliM7gLs7DQp2rPWi9_OnDxzJqx/exec';
-        const APP_VERSION = 'V1.1.2';
+        const APP_VERSION = 'V1.2.1';
         const BUILD_ID = new Date().toISOString().slice(0, 10) + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
         
         let productsData = [];
@@ -986,6 +1201,7 @@
             loadProductsList();
             loadInvendus();
             loadFournisseurs();
+            loadCategoriesDropdown();
             console.log(`AB STOCK ${APP_VERSION} | Build: ${BUILD_ID}`);
         });
 
@@ -1178,6 +1394,12 @@
                 document.getElementById('docsModal').classList.add('active');
             } else if (type === 'addInvendu') {
                 document.getElementById('addInvenduModal').classList.add('active');
+            } else if (type === 'searchCategory') {
+                document.getElementById('searchCategoryModal').classList.add('active');
+                document.getElementById('categorySearchInput').focus();
+            } else if (type === 'createCategory') {
+                document.getElementById('createCategoryModal').classList.add('active');
+                document.getElementById('newCategoryName').focus();
             }
         }
 
@@ -1196,6 +1418,16 @@
                 document.getElementById('invUnite').value = 'pièce';
                 document.getElementById('invPrixUnitaire').value = '';
                 document.getElementById('invImageUrl').value = '';
+                document.getElementById('invImageFile').value = '';
+                document.getElementById('invImagePreview').style.display = 'none';
+                document.getElementById('invImageFileName').textContent = 'Aucun fichier';
+            } else if (type === 'searchCategory') {
+                document.getElementById('searchCategoryModal').classList.remove('active');
+                document.getElementById('categorySearchInput').value = '';
+            } else if (type === 'createCategory') {
+                document.getElementById('createCategoryModal').classList.remove('active');
+                document.getElementById('newCategoryName').value = '';
+                document.getElementById('newCategoryDesc').value = '';
             }
         }
 
@@ -1474,8 +1706,27 @@
             const quantite = parseFloat(document.getElementById('invQuantite').value);
             const unite = document.getElementById('invUnite').value;
             const prixUnitaire = parseFloat(document.getElementById('invPrixUnitaire').value);
-            const imageUrl = document.getElementById('invImageUrl').value;
+            let imageUrl = document.getElementById('invImageUrl').value;
             
+            // Si une image est uploadée, on utilise celle-ci sinon le lien Drive
+            const imageFile = document.getElementById('invImageFile');
+            if (imageFile.files.length > 0 && !imageUrl) {
+                // On lit le fichier et le convertit en base64
+                const file = imageFile.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    imageUrl = e.target.result; // Base64 data URL
+                    sendInvenduData(designation, categorie, quantite, unite, prixUnitaire, imageUrl);
+                };
+                
+                reader.readAsDataURL(file);
+            } else {
+                sendInvenduData(designation, categorie, quantite, unite, prixUnitaire, imageUrl);
+            }
+        }
+        
+        function sendInvenduData(designation, categorie, quantite, unite, prixUnitaire, imageUrl) {
             if (!designation || !quantite || !prixUnitaire) {
                 showNotification('❌ Remplis les champs requis', 'error');
                 return;
@@ -1507,6 +1758,30 @@
                 console.error('Erreur:', error);
                 showNotification('❌ Erreur serveur', 'error');
             });
+        }
+        
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('invImagePreview').style.display = 'block';
+                document.getElementById('invImagePreviewImg').src = e.target.result;
+                document.getElementById('invImageFileName').textContent = file.name;
+                document.getElementById('invImageUrl').value = ''; // Nettoie le champ lien
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        function clearImagePreview() {
+            // Si on met un lien Drive, on efface la preview image
+            if (document.getElementById('invImageUrl').value) {
+                document.getElementById('invImageFile').value = '';
+                document.getElementById('invImagePreview').style.display = 'none';
+                document.getElementById('invImageFileName').textContent = 'Aucun fichier';
+            }
         }
 
         function viewInvenduImage(url) {
@@ -1565,6 +1840,142 @@
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.classList.remove('active');
+            }
+            // Fermer dropdown si clique ailleurs
+            if (!event.target.closest('.dropdown-categories')) {
+                const dropdown = document.getElementById('categoryDropdownMenu');
+                if (dropdown && dropdown.classList.contains('active')) {
+                    dropdown.classList.remove('active');
+                    const toggle = document.querySelector('.dropdown-toggle');
+                    if (toggle) toggle.removeAttribute('aria-expanded');
+                }
+            }
+        }
+
+        // ============================================================================
+        // GESTION DROPDOWN CATEGORIES
+        // ============================================================================
+        
+        let categoriesList = ['Plomberie', 'Peinture', 'Électricité', 'Carrelage', 'Consommables', 'Outillage', 'Quincaillerie', 'Invendus'];
+        
+        function loadCategoriesDropdown() {
+            const dropdown = document.getElementById('categoryDropdownItems');
+            if (!dropdown) return;
+            
+            let html = '';
+            categoriesList.forEach(cat => {
+                html += `<div class="dropdown-item" onclick="searchByCategory('${cat}')">${cat}</div>`;
+            });
+            dropdown.innerHTML = html;
+        }
+        
+        function toggleCategoryDropdown() {
+            const dropdown = document.getElementById('categoryDropdownMenu');
+            const toggle = document.querySelector('.dropdown-toggle');
+            
+            if (!dropdown) return;
+            
+            const isActive = dropdown.classList.toggle('active');
+            if (isActive) {
+                toggle.setAttribute('aria-expanded', 'true');
+                loadCategoriesDropdown();
+            } else {
+                toggle.removeAttribute('aria-expanded');
+            }
+        }
+        
+        function searchByCategory(category) {
+            const modal = document.getElementById('searchCategoryModal');
+            document.getElementById('categoryTitle').textContent = category;
+            
+            // Récupérer les produits de cette catégorie
+            fetch(API_URL + '?action=getProduits')
+                .then(response => response.json())
+                .then(produits => {
+                    const filtered = produits.filter(p => p.Catégorie === category);
+                    displayCategoryProducts(filtered, category);
+                    modal.classList.add('active');
+                    
+                    // Fermer le dropdown
+                    document.getElementById('categoryDropdownMenu').classList.remove('active');
+                })
+                .catch(error => console.error('Erreur:', error));
+        }
+        
+        function displayCategoryProducts(products, category) {
+            const container = document.getElementById('categoryProductsList');
+            
+            if (products.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #999;">
+                        <p style="font-size: 16px;">Aucun produit dans cette catégorie</p>
+                        <p style="font-size: 12px;">Commence par ajouter des produits</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<table class="products-table"><thead><tr><th>Produit</th><th>Stock</th><th>PMP</th><th>Valeur</th></tr></thead><tbody>';
+            products.forEach(prod => {
+                const qte = parseFloat(prod['Quantité Actuelle']) || 0;
+                const pmp = parseFloat(prod['PMP']) || 0;
+                const valeur = (qte * pmp).toFixed(2);
+                html += `
+                    <tr>
+                        <td>${prod['Désignation']}</td>
+                        <td>${qte} ${prod['Unité']}</td>
+                        <td>${pmp}€</td>
+                        <td style="color: #2a5298; font-weight: 600;">${valeur}€</td>
+                    </tr>
+                `;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        function filterCategoryProducts() {
+            const input = document.getElementById('categorySearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.products-table tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+            });
+        }
+        
+        function submitCreateCategory() {
+            const name = document.getElementById('newCategoryName').value.trim();
+            const desc = document.getElementById('newCategoryDesc').value.trim();
+            
+            if (!name) {
+                showNotification('❌ Remplis le nom de la catégorie', 'error');
+                return;
+            }
+            
+            if (categoriesList.includes(name)) {
+                showNotification('❌ Cette catégorie existe déjà', 'error');
+                return;
+            }
+            
+            // Ajouter à la liste locale
+            categoriesList.push(name);
+            categoriesList.sort();
+            
+            showNotification(`✅ Catégorie "${name}" créée!`, 'success');
+            closeModal('createCategory');
+            loadCategoriesDropdown();
+            
+            // Récharger les catégories dans les selects
+            updateCategorySelects();
+        }
+        
+        function updateCategorySelects() {
+            // Mettre à jour le select de création invendu
+            const select = document.getElementById('invCategorie');
+            if (select) {
+                const current = select.value;
+                select.innerHTML = categoriesList.map(cat => `<option>${cat}</option>`).join('');
+                select.value = current;
             }
         }
 
