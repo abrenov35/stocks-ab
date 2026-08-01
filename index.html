@@ -835,7 +835,6 @@
                 </div>
             </div>
             
-            <button class="header-btn" onclick="openModal('search')">🔍 Chercher</button>
             <button class="header-btn" onclick="openModal('entry')">➕ Entrée</button>
         </div>
     </header>
@@ -985,36 +984,6 @@
             <div class="form-actions">
                 <button onclick="closeInvenduImageModal()">Fermer</button>
             </div>
-        </div>
-    </div>
-
-    <div id="searchModal" class="modal">
-        <div class="modal-content" style="max-width: 700px;">
-            <div class="modal-header">
-                <span>🔍 Chercher un produit</span>
-                <button class="close-btn" onclick="closeModal('search')">×</button>
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <div style="flex: 1;">
-                    <input type="text" id="searchInput" placeholder="Taper le nom..." autofocus onkeyup="filterProducts()">
-                </div>
-                <button onclick="toggleCategories()" style="background: #2a5298; color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">📂 Catégories</button>
-            </div>
-
-            <div id="categoriesView" style="display: none; margin-bottom: 20px;">
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;" id="catList"></div>
-            </div>
-
-            <div id="productsTable" style="display: none;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                    <h3 id="categoryTitle" style="font-size: 15px; font-weight: 600; margin: 0;"></h3>
-                    <button onclick="backToSearch()" style="background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">← Retour</button>
-                </div>
-                <div id="productsData" style="border: 1px solid #e8e8e8; border-radius: 6px; overflow: hidden;"></div>
-            </div>
-
-            <div id="searchResults" style="margin-top: 15px;"></div>
         </div>
     </div>
 
@@ -1172,7 +1141,7 @@
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwusUZCMaCMfxAFlZP4ZRm4Lpv8tVNQBejUsZepNRliM7gLs7DQp2rPWi9_OnDxzJqx/exec';
-        const APP_VERSION = 'V1.2.2';
+        const APP_VERSION = 'V1.2.3';
         const BUILD_ID = new Date().toISOString().slice(0, 10) + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
         
         let productsData = [];
@@ -1373,10 +1342,7 @@
         }
 
         function openModal(type) {
-            if (type === 'search') {
-                document.getElementById('searchModal').classList.add('active');
-                document.getElementById('searchInput').focus();
-            } else if (type === 'entry') {
+            if (type === 'entry') {
                 document.getElementById('entryModal').classList.add('active');
             } else if (type === 'addInvendu') {
                 document.getElementById('addInvenduModal').classList.add('active');
@@ -1390,9 +1356,7 @@
         }
 
         function closeModal(type) {
-            if (type === 'search') {
-                document.getElementById('searchModal').classList.remove('active');
-            } else if (type === 'entry') {
+            if (type === 'entry') {
                 document.getElementById('entryModal').classList.remove('active');
             } else if (type === 'addInvendu') {
                 document.getElementById('addInvenduModal').classList.remove('active');
@@ -1417,74 +1381,6 @@
 
         function toggleNewProduct() {
             document.getElementById('newProductModal').classList.toggle('active');
-        }
-
-        function toggleCategories() {
-            const catView = document.getElementById('categoriesView');
-            const searchResults = document.getElementById('searchResults');
-            const productTable = document.getElementById('productsTable');
-            
-            if (catView.style.display === 'none') {
-                catView.style.display = 'block';
-                searchResults.innerHTML = '';
-                productTable.style.display = 'none';
-                document.getElementById('searchInput').value = '';
-            } else {
-                catView.style.display = 'none';
-            }
-        }
-
-        function filterProducts() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const results = document.getElementById('searchResults');
-            const categoriesView = document.getElementById('categoriesView');
-            const productsTable = document.getElementById('productsTable');
-            
-            categoriesView.style.display = 'none';
-            productsTable.style.display = 'none';
-            
-            if (!query) {
-                results.innerHTML = '';
-                return;
-            }
-
-            const filtered = productsData.filter(p => 
-                p.Désignation.toLowerCase().includes(query)
-            );
-            
-            if (filtered.length === 0) {
-                results.innerHTML = '<div style="padding: 20px; text-align: center; color: #bbb;">Aucun produit trouvé</div>';
-                return;
-            }
-
-            let html = `
-                <table class="products-table">
-                    <thead>
-                        <tr>
-                            <th>Produit</th>
-                            <th style="text-align: center;">Qté</th>
-                            <th style="text-align: right;">PMP (€)</th>
-                            <th style="text-align: right;">Total (€)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            filtered.forEach(p => {
-                const total = (p['Quantité Actuelle'] * p.PMP).toFixed(2);
-                const qteClass = p['Quantité Actuelle'] === 0 ? 'style="color: #dc3545; font-weight: 700;"' : '';
-                html += `
-                    <tr>
-                        <td class="product-name">${p.Désignation}</td>
-                        <td class="product-qty" ${qteClass}>${p['Quantité Actuelle']}</td>
-                        <td class="product-price">${p.PMP}</td>
-                        <td class="product-total">${total}</td>
-                    </tr>
-                `;
-            });
-            
-            html += '</tbody></table>';
-            results.innerHTML = html;
         }
 
         function showCategoryProducts(category) {
@@ -1526,13 +1422,6 @@
             
             html += '</tbody></table>';
             document.getElementById('productsData').innerHTML = html;
-        }
-
-        function backToSearch() {
-            document.getElementById('categoriesView').style.display = 'none';
-            document.getElementById('productsTable').style.display = 'none';
-            document.getElementById('searchResults').innerHTML = '';
-            document.getElementById('searchInput').value = '';
         }
 
         function submitEntry() {
