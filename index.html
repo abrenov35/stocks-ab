@@ -168,6 +168,33 @@
         .alert.critical { background: #fffbeb; border-color: #fbbf24; }
         .alert.warning { background: #ecf7ff; border-color: #3b82f6; }
         
+        .btn-add-invendu-large {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 
+                0 6px 16px rgba(255, 107, 53, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            letter-spacing: 0.3px;
+        }
+        
+        .btn-add-invendu-large:hover {
+            box-shadow: 
+                0 10px 24px rgba(255, 107, 53, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+        }
+        
+        .btn-add-invendu-large:active {
+            transform: translateY(-1px);
+        }
+        
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -709,9 +736,9 @@
 
         <!-- GRID INVENDUS -->
         <div class="section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>📦 Produits à Revendre</h2>
-                <button class="header-btn" onclick="openModal('addInvendu')" style="margin: 0;">+ Ajouter</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0;">📦 Produits à Revendre</h2>
+                <button id="btnAddInvenduMain" class="btn-add-invendu-large" onclick="openModal('addInvendu')">➕ Ajouter Invendu</button>
             </div>
             <div id="invendusList" class="products-grid"></div>
         </div>
@@ -942,7 +969,7 @@
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwusUZCMaCMfxAFlZP4ZRm4Lpv8tVNQBejUsZepNRliM7gLs7DQp2rPWi9_OnDxzJqx/exec';
-        const APP_VERSION = 'V1.1.1';
+        const APP_VERSION = 'V1.1.2';
         const BUILD_ID = new Date().toISOString().slice(0, 10) + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
         
         let productsData = [];
