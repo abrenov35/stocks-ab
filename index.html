@@ -151,7 +151,141 @@
         .alert.critical { background: #fffbeb; border-color: #fbbf24; }
         .alert.warning { background: #ecf7ff; border-color: #3b82f6; }
         
-        .modal {
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        
+        .products-grid .empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: #999;
+            padding: 50px 20px;
+            font-size: 16px;
+        }
+        
+        .product-card {
+            background: white;
+            border: 2px solid #e8f0eb;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .product-card:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+            border-color: #2a5298;
+            transform: translateY(-4px);
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 180px;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #ccc;
+            overflow: hidden;
+        }
+        
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .product-info {
+            padding: 14px;
+        }
+        
+        .product-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e3c72;
+            margin-bottom: 6px;
+        }
+        
+        .product-meta {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .product-meta span {
+            display: block;
+            margin-bottom: 3px;
+        }
+        
+        .product-price {
+            font-size: 15px;
+            font-weight: 700;
+            color: #2a5298;
+            margin: 8px 0;
+        }
+        
+        .product-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .status-available {
+            background: #d4f4dd;
+            color: #1e6b34;
+        }
+        
+        .status-sold {
+            background: #f5d7dc;
+            color: #a72c47;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 6px;
+            padding-top: 10px;
+            border-top: 1px solid #e8f0eb;
+        }
+        
+        .product-actions button {
+            flex: 1;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .btn-view-image {
+            background: #e8f4f8;
+            color: #2d7a96;
+            border: 1px solid #b3dfe8;
+        }
+        
+        .btn-view-image:hover {
+            background: #d0ecf5;
+        }
+        
+        .btn-delete-inv {
+            background: #f5d7dc;
+            color: #a72c47;
+            border: 1px solid #f0b1b8;
+        }
+        
+        .btn-delete-inv:hover {
+            background: #f0bccc;
+        }
+        
+        .modal { 
             display: none;
             position: fixed;
             top: 0;
@@ -457,14 +591,16 @@
         </div>
         <div class="header-version">V1 · <span id="buildId"></span></div>
         <div class="header-right">
+            <button class="header-btn" onclick="switchView('stock')">📊 Stock</button>
+            <button class="header-btn" onclick="switchView('invendus')">📦 Invendus</button>
             <button class="header-btn" onclick="openModal('search')">🔍 Chercher</button>
             <button class="header-btn" onclick="openModal('entry')">➕ Entrée</button>
             <button class="header-btn" onclick="openModal('docs')">📄 Documents</button>
         </div>
     </header>
 
-    <!-- CONTENU -->
-    <div class="content">
+    <!-- CONTENU STOCK (DÉFAUT) -->
+    <div id="stockView" class="content">
         <!-- RÉSUMÉ -->
         <div class="summary">
             <div class="summary-card">
@@ -499,7 +635,103 @@
         </div>
     </div>
 
-    <!-- MODAL RECHERCHE -->
+    <!-- CONTENU INVENDUS (CACHÉ PAR DÉFAUT) -->
+    <div id="invendusView" class="content" style="display: none;">
+        <!-- RÉSUMÉ INVENDUS -->
+        <div class="summary">
+            <div class="summary-card">
+                <label>Produits Invendus</label>
+                <div class="value" id="invenduCount">0</div>
+                <div class="subtext" id="invenduTotal">0€</div>
+            </div>
+        </div>
+
+        <!-- GRID INVENDUS -->
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>📦 Produits à Revendre</h2>
+                <button class="header-btn" onclick="openModal('addInvendu')" style="margin: 0;">+ Ajouter</button>
+            </div>
+            <div id="invendusList" class="products-grid"></div>
+        </div>
+    </div>
+
+    <!-- MODAL AJOUTER INVENDU -->
+    <div id="addInvenduModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>📦 Ajouter un produit invendu</span>
+                <button class="close-btn" onclick="closeModal('addInvendu')">×</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Désignation *</label>
+                <input type="text" id="invDesignation" placeholder="Nom du produit">
+            </div>
+            
+            <div class="form-group">
+                <label>Catégorie *</label>
+                <select id="invCategorie">
+                    <option>Plomberie</option>
+                    <option>Peinture</option>
+                    <option>Électricité</option>
+                    <option>Carrelage</option>
+                    <option>Consommables</option>
+                    <option>Outillage</option>
+                    <option>Quincaillerie</option>
+                </select>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                    <label>Quantité *</label>
+                    <input type="number" id="invQuantite" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Unité *</label>
+                    <select id="invUnite">
+                        <option>pièce</option>
+                        <option>mètre</option>
+                        <option>m²</option>
+                        <option>bidon</option>
+                        <option>kg</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Prix Unitaire (€) *</label>
+                <input type="number" id="invPrixUnitaire" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label>Lien Image Google Drive</label>
+                <input type="text" id="invImageUrl" placeholder="https://drive.google.com/file/d/...">
+            </div>
+            
+            <div class="form-actions">
+                <button onclick="submitAddInvendu()">Ajouter invendu</button>
+                <button onclick="closeModal('addInvendu')">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VOIR IMAGE INVENDU -->
+    <div id="invenduImageModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <span>📸 Visualisation produit</span>
+                <button class="close-btn" onclick="closeInvenduImageModal()">×</button>
+            </div>
+            <div style="text-align: center; margin: 20px 0;">
+                <img id="invenduModalImage" src="" alt="Produit" style="max-width: 100%; max-height: 400px; border-radius: 8px;">
+            </div>
+            <div class="form-actions">
+                <button onclick="closeInvenduImageModal()">Fermer</button>
+            </div>
+        </div>
+    </div>
+
     <div id="searchModal" class="modal">
         <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
@@ -649,11 +881,13 @@
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwusUZCMaCMfxAFlZP4ZRm4Lpv8tVNQBejUsZepNRliM7gLs7DQp2rPWi9_OnDxzJqx/exec';
-        const APP_VERSION = 'V1.0.2';
+        const APP_VERSION = 'V1.1.0';
         const BUILD_ID = new Date().toISOString().slice(0, 10) + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
         
         let productsData = [];
+        let invendusData = [];
         let fournisseurs = ['VBA', 'Point P', 'Gedimat', 'Leroy Merlin'];
+        let currentView = 'stock';
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('buildId').textContent = BUILD_ID;
@@ -662,9 +896,25 @@
             loadAlerts();
             loadCategories();
             loadProductsList();
+            loadInvendus();
             loadFournisseurs();
             console.log(`AB STOCK ${APP_VERSION} | Build: ${BUILD_ID}`);
         });
+
+        function switchView(view) {
+            currentView = view;
+            const stockView = document.getElementById('stockView');
+            const invendusView = document.getElementById('invendusView');
+            
+            if (view === 'stock') {
+                stockView.style.display = 'block';
+                invendusView.style.display = 'none';
+            } else {
+                stockView.style.display = 'none';
+                invendusView.style.display = 'block';
+                loadInvendus();
+            }
+        }
 
         function setTodayDate() {
             const today = new Date();
@@ -740,6 +990,72 @@
                 .catch(error => console.error('Erreur produits:', error));
         }
 
+        function loadInvendus() {
+            fetch(API_URL + '?action=getInvendus')
+                .then(response => response.json())
+                .then(data => {
+                    invendusData = data;
+                    renderInvendus();
+                })
+                .catch(error => console.error('Erreur invendus:', error));
+        }
+
+        function renderInvendus() {
+            const container = document.getElementById('invendusList');
+            
+            if (invendusData.length === 0) {
+                container.innerHTML = '<div class="empty">Aucun produit invendu</div>';
+                return;
+            }
+            
+            let totalValue = 0;
+            let html = '';
+            
+            invendusData.forEach(inv => {
+                const total = (inv['Quantité'] * inv['Prix Achat Unitaire']).toFixed(2);
+                totalValue += parseFloat(total);
+                const statusClass = inv.Statut === 'Vendu' ? 'status-sold' : 'status-available';
+                const statusText = inv.Statut === 'Vendu' ? '✓ Vendu' : '● Disponible';
+                
+                html += `
+                    <div class="product-card">
+                        <div class="product-image">
+                            ${inv['Lien Image'] ? `<img src="${inv['Lien Image']}" alt="${inv.Désignation}">` : '📦'}
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">${inv.Désignation}</div>
+                            <div class="product-meta">
+                                <span>📁 ${inv.Catégorie}</span>
+                                <span>📦 ${inv.Quantité} ${inv.Unité}</span>
+                                <span>📅 ${formatDateInvendu(inv['Date Entrée'])}</span>
+                            </div>
+                            <div class="product-status ${statusClass}">${statusText}</div>
+                            <div class="product-price">${total}€</div>
+                            <div class="product-actions">
+                                ${inv['Lien Image'] ? `<button class="btn-view-image" onclick="viewInvenduImage('${inv['Lien Image']}')">👁️ Voir</button>` : '<button class="btn-view-image" disabled style="opacity: 0.5;">👁️ Voir</button>'}
+                                <button class="btn-delete-inv" onclick="markInvenduSold('${inv.ID}', '${inv.Désignation}')">✓ Vendu</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Mettre à jour le résumé
+            document.getElementById('invenduCount').textContent = invendusData.filter(i => i.Statut === 'Disponible').length;
+            document.getElementById('invenduTotal').textContent = totalValue.toFixed(2) + '€';
+        }
+
+        function formatDateInvendu(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
         function displayAlerts(alerts) {
             const alertsContainer = document.getElementById('alerts');
             let html = '';
@@ -772,6 +1088,8 @@
                 document.getElementById('entryModal').classList.add('active');
             } else if (type === 'docs') {
                 document.getElementById('docsModal').classList.add('active');
+            } else if (type === 'addInvendu') {
+                document.getElementById('addInvenduModal').classList.add('active');
             }
         }
 
@@ -782,6 +1100,14 @@
                 document.getElementById('entryModal').classList.remove('active');
             } else if (type === 'docs') {
                 document.getElementById('docsModal').classList.remove('active');
+            } else if (type === 'addInvendu') {
+                document.getElementById('addInvenduModal').classList.remove('active');
+                document.getElementById('invDesignation').value = '';
+                document.getElementById('invCategorie').value = 'Plomberie';
+                document.getElementById('invQuantite').value = '';
+                document.getElementById('invUnite').value = 'pièce';
+                document.getElementById('invPrixUnitaire').value = '';
+                document.getElementById('invImageUrl').value = '';
             }
         }
 
@@ -1054,6 +1380,76 @@
             }
         }
 
+        function submitAddInvendu() {
+            const designation = document.getElementById('invDesignation').value;
+            const categorie = document.getElementById('invCategorie').value;
+            const quantite = parseFloat(document.getElementById('invQuantite').value);
+            const unite = document.getElementById('invUnite').value;
+            const prixUnitaire = parseFloat(document.getElementById('invPrixUnitaire').value);
+            const imageUrl = document.getElementById('invImageUrl').value;
+            
+            if (!designation || !quantite || !prixUnitaire) {
+                showNotification('❌ Remplis les champs requis', 'error');
+                return;
+            }
+            
+            fetch(API_URL + '?action=addInvendu', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    designation: designation,
+                    categorie: categorie,
+                    quantite: quantite,
+                    unite: unite,
+                    prixUnitaire: prixUnitaire,
+                    imageUrl: imageUrl
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showNotification('✅ Invendu ajouté!', 'success');
+                    closeModal('addInvendu');
+                    setTimeout(loadInvendus, 500);
+                } else {
+                    showNotification('❌ Erreur: ' + result.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showNotification('❌ Erreur serveur', 'error');
+            });
+        }
+
+        function viewInvenduImage(url) {
+            if (!url) return;
+            document.getElementById('invenduModalImage').src = url;
+            document.getElementById('invenduImageModal').classList.add('active');
+        }
+
+        function closeInvenduImageModal() {
+            document.getElementById('invenduImageModal').classList.remove('active');
+        }
+
+        function markInvenduSold(id, name) {
+            if (confirm(`Marquer "${name}" comme vendu?`)) {
+                fetch(API_URL + '?action=markInvenduSold', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ invenduId: id })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        showNotification('✅ Produit marqué comme vendu', 'success');
+                        loadInvendus();
+                    } else {
+                        showNotification('❌ Erreur', 'error');
+                    }
+                });
+            }
+        }
+
         function showNotification(message, type = 'info') {
             const notif = document.createElement('div');
             notif.textContent = message;
@@ -1085,8 +1481,12 @@
         }
 
         setInterval(function() {
-            loadDashboard();
-            loadAlerts();
+            if (currentView === 'stock') {
+                loadDashboard();
+                loadAlerts();
+            } else {
+                loadInvendus();
+            }
         }, 5 * 60 * 1000);
     </script>
 </body>
