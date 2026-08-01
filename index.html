@@ -20,10 +20,21 @@
             align-items: center;
             padding: 20px 40px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            position: relative;
         }
         
         .header-left h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
         .header-left p { font-size: 13px; opacity: 0.85; }
+        
+        .header-version {
+            position: absolute;
+            top: 8px;
+            right: 40px;
+            font-size: 10px;
+            opacity: 0.6;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
         
         .header-right { display: flex; gap: 12px; }
         
@@ -346,6 +357,7 @@
             <h1>AB STOCK</h1>
             <p>Inventaire • <span id="dateToday"></span></p>
         </div>
+        <div class="header-version">V1 · <span id="buildId"></span></div>
         <div class="header-right">
             <button class="header-btn" onclick="openModal('search')">🔍 Chercher</button>
             <button class="header-btn" onclick="openModal('entry')">➕ Entrée</button>
@@ -543,17 +555,21 @@
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwusUZCMaCMfxAFlZP4ZRm4Lpv8tVNQBejUsZepNRliM7gLs7DQp2rPWi9_OnDxzJqx/exec';
+        const APP_VERSION = 'V1.0.0';
+        const BUILD_ID = new Date().toISOString().slice(0, 10) + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
         
         let productsData = [];
         let fournisseurs = ['VBA', 'Point P', 'Gedimat', 'Leroy Merlin'];
 
         document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('buildId').textContent = BUILD_ID;
             setTodayDate();
             loadDashboard();
             loadAlerts();
             loadCategories();
             loadProductsList();
             loadFournisseurs();
+            console.log(`AB STOCK ${APP_VERSION} | Build: ${BUILD_ID}`);
         });
 
         function setTodayDate() {
