@@ -1141,13 +1141,63 @@
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbyL76EHxlFpQL_KG3ZZxkCIQJWG2Fc3xZvm6-oFEQziU8_u8AU8zi8nsO5iNxqjtnl_/exec';
-        const APP_VERSION = 'V1.2.3';
+        const APP_VERSION = 'V1.3.0';
         const BUILD_ID = new Date().toISOString().slice(0, 10) + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
         
         let productsData = [];
         let invendusData = [];
         let fournisseurs = ['VBA', 'Point P', 'Gedimat', 'Leroy Merlin'];
         let currentView = 'stock';
+
+        // ============================================================================
+        // FONCTIONS API UNIVERSELLES - Évite CORS
+        // ============================================================================
+        async function apiPost(action, data) {
+          try {
+            const response = await fetch(
+              `${API_URL}?action=${encodeURIComponent(action)}`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "text/plain;charset=utf-8"
+                },
+                body: JSON.stringify(data)
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (!result.success) {
+              throw new Error(result.error || "Erreur serveur");
+            }
+
+            return result;
+          } catch (error) {
+            console.error(`❌ Erreur API (${action}):`, error);
+            throw error;
+          }
+        }
+
+        async function apiGet(action) {
+          try {
+            const response = await fetch(
+              `${API_URL}?action=${encodeURIComponent(action)}`
+            );
+
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+
+            return await response.json();
+          } catch (error) {
+            console.error(`❌ Erreur API (${action}):`, error);
+            throw error;
+          }
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('buildId').textContent = BUILD_ID;
@@ -1192,8 +1242,7 @@
         }
 
         function loadDashboard() {
-            fetch(API_URL + '?action=getDashboard')
-                .then(response => response.json())
+            apiGet('getDashboard')
                 .then(data => {
                     document.getElementById('stockReg').textContent = (parseFloat(data['Stock Régulier (€)']) || 0).toFixed(2) + '€';
                     document.getElementById('stockInv').textContent = (parseFloat(data['Invendus (€)']) || 0).toFixed(2) + '€';
@@ -1201,22 +1250,21 @@
                     document.getElementById('countProd').textContent = (data['Nombre Produits'] || 0) + ' produits';
                     document.getElementById('countInv').textContent = (data['Nombre Invendus'] || 0) + ' articles';
                 })
-                .catch(error => console.error('Erreur dashboard:', error));
+                .catch(error => console.error('❌ Erreur dashboard:', error));
         }
 
         function loadAlerts() {
-            fetch(API_URL + '?action=getAlerts')
-                .then(response => response.json())
+            apiGet('getAlerts')
                 .then(data => {
                     displayAlerts(data);
                 })
-                .catch(error => console.error('Erreur alertes:', error));
+                .catch(error => console.error('❌ Erreur alertes:', error));
         }
 
         function loadCategories() {
             Promise.all([
-                fetch(API_URL + '?action=getCategories').then(r => r.json()),
-                fetch(API_URL + '?action=getProduits').then(r => r.json())
+                apiGet('getCategories'),
+                apiGet('getProduits')
             ])
             .then(([categories, produits]) => {
                 // Calculer la valeur par catégorie
@@ -1258,12 +1306,11 @@
                     catListElement.innerHTML = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%;">' + catButtons + '</div>';
                 }
             })
-            .catch(error => console.error('Erreur catégories:', error));
+            .catch(error => console.error('❌ Erreur catégories:', error));
         }
 
         function loadProductsList() {
-            fetch(API_URL + '?action=getProduits')
-                .then(response => response.json())
+            apiGet('getProduits')
                 .then(produits => {
                     productsData = produits;
                     let html = '';
@@ -1272,17 +1319,16 @@
                     });
                     document.getElementById('productList').innerHTML = html;
                 })
-                .catch(error => console.error('Erreur produits:', error));
+                .catch(error => console.error('❌ Erreur produits:', error));
         }
 
         function loadInvendus() {
-            fetch(API_URL + '?action=getInvendus')
-                .then(response => response.json())
+            apiGet('getInvendus')
                 .then(data => {
                     invendusData = data;
                     renderInvendus();
                 })
-                .catch(error => console.error('Erreur invendus:', error));
+                .catch(error => console.error('❌ Erreur invendus:', error));
         }
 
         function renderInvendus() {
@@ -1460,35 +1506,26 @@
                 return;
             }
             
-            fetch(API_URL + '?action=addEntry', {
-                method: 'POST',
-                headers: {'Content-Type': 'text/plain;charset=utf-8'},
-                body: JSON.stringify({
-                    productId: productId,
-                    fournisseur: fournisseur,
-                    date: date,
-                    quantite: quantite,
-                    prixUnitaire: prixUnitaire,
-                    documentUrl: ''
-                })
+            apiPost('addEntry', {
+                productId: productId,
+                fournisseur: fournisseur,
+                date: date,
+                quantite: quantite,
+                prixUnitaire: prixUnitaire,
+                documentUrl: ''
             })
-            .then(response => response.json())
             .then(result => {
-                if (result.success) {
-                    showNotification('✅ Entrée enregistrée', 'success');
-                    closeModal('entry');
-                    loadDashboard();
-                    loadProductsList();
-                    document.getElementById('productInput').value = '';
-                    document.getElementById('quantite').value = '';
-                    document.getElementById('prixUnitaire').value = '';
-                } else {
-                    showNotification('❌ ' + result.error, 'error');
-                }
+                showNotification('✅ Entrée enregistrée', 'success');
+                closeModal('entry');
+                loadDashboard();
+                loadCategories();
+                loadProductsList();
+                document.getElementById('productInput').value = '';
+                document.getElementById('quantite').value = '';
+                document.getElementById('prixUnitaire').value = '';
             })
             .catch(error => {
-                console.error('Erreur:', error);
-                showNotification('❌ Erreur serveur', 'error');
+                showNotification('❌ ' + error.message, 'error');
             });
         }
 
@@ -1502,26 +1539,21 @@
                 return;
             }
             
-            fetch(API_URL + '?action=addProduct', {
-                method: 'POST',
-                headers: {'Content-Type': 'text/plain;charset=utf-8'},
-                body: JSON.stringify({
-                    designation: designation,
-                    categorie: categorie,
-                    unite: unite,
-                    emplacement: 'À définir'
-                })
+            apiPost('addProduct', {
+                designation: designation,
+                categorie: categorie,
+                unite: unite,
+                emplacement: 'À définir'
             })
-            .then(response => response.json())
             .then(result => {
-                if (result.success) {
-                    showNotification('✅ Produit créé', 'success');
-                    toggleNewProduct();
-                    loadProductsList();
-                    document.getElementById('productInput').value = result.id;
-                } else {
-                    showNotification('❌ ' + result.error, 'error');
-                }
+                showNotification('✅ Produit créé', 'success');
+                toggleNewProduct();
+                loadProductsList();
+                loadCategories();
+                document.getElementById('productInput').value = result.id;
+            })
+            .catch(error => {
+                showNotification('❌ ' + error.message, 'error');
             });
         }
 
@@ -1629,31 +1661,21 @@
                 return;
             }
             
-            fetch(API_URL + '?action=addInvendu', {
-                method: 'POST',
-                headers: {'Content-Type': 'text/plain;charset=utf-8'},
-                body: JSON.stringify({
-                    designation: designation,
-                    categorie: categorie,
-                    quantite: quantite,
-                    unite: unite,
-                    prixUnitaire: prixUnitaire,
-                    imageUrl: imageUrl
-                })
+            apiPost('addInvendu', {
+                designation: designation,
+                categorie: categorie,
+                quantite: quantite,
+                unite: unite,
+                prixUnitaire: prixUnitaire,
+                imageUrl: imageUrl
             })
-            .then(response => response.json())
             .then(result => {
-                if (result.success) {
-                    showNotification('✅ Invendu ajouté!', 'success');
-                    closeModal('addInvendu');
-                    setTimeout(loadInvendus, 500);
-                } else {
-                    showNotification('❌ Erreur: ' + result.error, 'error');
-                }
+                showNotification('✅ Invendu ajouté!', 'success');
+                closeModal('addInvendu');
+                setTimeout(loadInvendus, 500);
             })
             .catch(error => {
-                console.error('Erreur:', error);
-                showNotification('❌ Erreur serveur', 'error');
+                showNotification('❌ Erreur: ' + error.message, 'error');
             });
         }
         
@@ -1693,19 +1715,14 @@
 
         function markInvenduSold(id, name) {
             if (confirm(`Marquer "${name}" comme vendu?`)) {
-                fetch(API_URL + '?action=markInvenduSold', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'text/plain;charset=utf-8'},
-                    body: JSON.stringify({ invenduId: id })
-                })
-                .then(response => response.json())
+                apiPost('markInvenduSold', { invenduId: id })
                 .then(result => {
-                    if (result.success) {
-                        showNotification('✅ Produit marqué comme vendu', 'success');
-                        loadInvendus();
-                    } else {
-                        showNotification('❌ Erreur', 'error');
-                    }
+                    showNotification('✅ Produit marqué comme vendu', 'success');
+                    loadInvendus();
+                    loadDashboard();
+                })
+                .catch(error => {
+                    showNotification('❌ Erreur: ' + error.message, 'error');
                 });
             }
         }
@@ -1786,8 +1803,7 @@
             document.getElementById('categoryTitle').textContent = category;
             
             // Récupérer les produits de cette catégorie
-            fetch(API_URL + '?action=getProduits')
-                .then(response => response.json())
+            apiGet('getProduits')
                 .then(produits => {
                     const filtered = produits.filter(p => p.Catégorie === category);
                     displayCategoryProducts(filtered, category);
@@ -1796,7 +1812,7 @@
                     // Fermer le dropdown
                     document.getElementById('categoryDropdownMenu').classList.remove('active');
                 })
-                .catch(error => console.error('Erreur:', error));
+                .catch(error => console.error('❌ Erreur:', error));
         }
         
         function displayCategoryProducts(products, category) {
