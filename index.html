@@ -200,52 +200,264 @@
 
     <script>
         let currentView = 'stock';
-        function apiGet(action) { return new Promise((resolve, reject) => { const actionMap = {getDashboard: 'apiGetDashboard', getInvendus: 'apiGetInvendus', getProduits: 'apiGetProduits', getAlerts: 'apiGetAlerts'}; google.script.run.withSuccessHandler(result => resolve(result)).withFailureHandler(error => reject(error))[actionMap[action]](); }); }
-        function apiPost(action, data) { return new Promise((resolve, reject) => { const actionMap = {addEntry: { fn: 'apiAddEntry', args: [data.productId, data.fournisseur, data.date, data.quantite, data.prixUnitaire, ''] }, addProduct: { fn: 'apiAddProduct', args: [data.designation, data.categorie, data.unite, data.emplacement] }, addInvendu: { fn: 'apiAddInvendu', args: [data.designation, data.categorie, data.quantite, data.unite, data.prixUnitaire, ''] }, markInvenduSold: { fn: 'apiMarkInvenduSold', args: [data.invenduId] }}; const config = actionMap[action]; google.script.run.withSuccessHandler(result => resolve(result)).withFailureHandler(error => reject(error))[config.fn](...config.args); }); }
-        document.addEventListener('DOMContentLoaded', function() { document.getElementById('buildId').textContent = new Date().toLocaleDateString('fr-FR'); document.getElementById('entryDate').valueAsDate = new Date(); loadDashboard(); loadAlerts(); loadProductsList(); loadInvendus(); });
-        function loadDashboard() { apiGet('getDashboard').then(data => { document.getElementById('stockReg').textContent = (parseFloat(data['Stock Régulier (€)']) || 0).toFixed(2) + '€'; document.getElementById('countProd').textContent = (data['Nombre Produits'] || 0) + ' produits'; document.getElementById('stockInv').textContent = (parseFloat(data['Invendus (€)']) || 0).toFixed(2) + '€'; document.getElementById('countInv').textContent = (data['Nombre Invendus'] || 0) + ' articles'; document.getElementById('totalStock').textContent = ((parseFloat(data['Stock Régulier (€)']) || 0) + (parseFloat(data['Invendus (€)']) || 0)).toFixed(2) + '€'; }).catch(e => console.error(e)); }
-        function loadAlerts() { apiGet('getAlerts').then(data => { let html = ''; if (data.ruptures && data.ruptures.length > 0) html += '<div style="background: #fee; padding: 12px; border-radius: 6px; margin-bottom: 10px;"><strong>🔴 Ruptures (' + data.ruptures.length + ')</strong></div>'; if (data.aControler && data.aControler.length > 0) html += '<div style="background: #fefaed; padding: 12px; border-radius: 6px;"><strong>🟡 À Contrôler (' + data.aControler.length + ')</strong></div>'; if (!html) html = '<div class="empty-state">✅ Aucune alerte</div>'; document.getElementById('alertsList').innerHTML = html; }).catch(e => console.error(e)); }
-        function loadProductsList() { apiGet('getProduits').then(produits => { let html = '<option value="">-- Sélectionne ou crée --</option>'; produits.forEach(p => { html += '<option value="' + p.ID + '">' + p.Désignation + '</option>'; }); document.getElementById('productInput').innerHTML = html; }).catch(e => console.error(e)); }
-        function loadInvendus() { apiGet('getInvendus').then(invendus => { let html = ''; if (invendus.length === 0) { html = '<div class="empty-state">Aucun invendu</div>'; } else { html = '<table><thead><tr><th>Désignation</th><th>Catégorie</th><th>Quantité</th><th>Prix</th><th>Actions</th></tr></thead><tbody>'; invendus.forEach(inv => { html += '<tr><td>' + inv.Désignation + '</td><td>' + inv.Catégorie + '</td><td>' + inv.Quantité + ' ' + inv.Unité + '</td><td>' + (parseFloat(inv['Prix Achat Total']) || 0).toFixed(2) + '€</td><td><button onclick="markInvenduSold(\'' + inv.ID + '\', \'' + inv.Désignation + '\')" style="background: #4CAF50;">✓ Vendu</button></td></tr>'; }); html += '</tbody></table>'; } document.getElementById('invendusList').innerHTML = html; }).catch(e => console.error(e)); }
-        function submitEntry() { const productId = document.getElementById('productInput').value; const fournisseur = document.getElementById('fournisseur').value; const date = document.getElementById('entryDate').value; const quantite = parseFloat(document.getElementById('quantite').value); const prixUnitaire = parseFloat(document.getElementById('prixUnitaire').value); if (!productId || !fournisseur || !date || !quantite || !prixUnitaire) { showNotification('❌ Remplis tous les champs', 'error'); return; } apiPost('addEntry', { productId, fournisseur, date, quantite, prixUnitaire }).then(() => { showNotification('✅ Entrée enregistrée', 'success'); closeModal('entry'); loadDashboard(); loadProductsList(); document.getElementById('quantite').value = ''; document.getElementById('prixUnitaire').value = ''; document.getElementById('montantHT').value = ''; }).catch(e => showNotification('❌ Erreur: ' + e.message, 'error')); }
-        function submitCreateProduct() { 
-          const designation = document.getElementById('newProdDesignation').value.trim(); 
-          const categorie = document.getElementById('newProdCategorie').value; 
-          const unite = document.getElementById('newProdUnite').value.trim(); 
-          const emplacement = document.getElementById('newProdEmplacement').value.trim(); 
-          if (!designation || !categorie || !unite) { 
-            showNotification('❌ Remplis les champs requis', 'error'); 
-            return; 
-          } 
-          apiPost('addProduct', { designation, categorie, unite, emplacement }).then(result => { 
-            showNotification('✅ Produit créé!', 'success'); 
-            closeModal('createProduct');
-            // ⏳ Attends 1 seconde puis rafraîchit le dropdown
-            setTimeout(() => {
-              loadProductsList().then(() => {
-                // Auto-sélectionne le nouveau produit
-                document.getElementById('productInput').value = result.id;
-                console.log('✅ Produit ' + result.id + ' créé et sélectionné');
-              });
-            }, 1000);
-            // Nettoie les champs
-            document.getElementById('newProdDesignation').value = ''; 
-            document.getElementById('newProdCategorie').value = ''; 
-            document.getElementById('newProdUnite').value = ''; 
-            document.getElementById('newProdEmplacement').value = ''; 
-          }).catch(e => showNotification('❌ Erreur: ' + e.message, 'error')); 
+
+        function apiGet(action) {
+            return new Promise((resolve, reject) => {
+                const actionMap = {
+                    getDashboard: 'apiGetDashboard',
+                    getInvendus: 'apiGetInvendus',
+                    getProduits: 'apiGetProduits',
+                    getAlerts: 'apiGetAlerts'
+                };
+                google.script.run
+                    .withSuccessHandler(result => resolve(result))
+                    .withFailureHandler(error => reject(error))
+                    [actionMap[action]]();
+            });
         }
-        function previewImage(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { document.getElementById('imagePreview').style.display = 'block'; document.getElementById('previewImg').src = e.target.result; document.getElementById('previewText').textContent = file.name; }; reader.readAsDataURL(file); }
-        function sendInvenduData() { const designation = document.getElementById('invDesignation').value.trim(); const categorie = document.getElementById('invCategorie').value; const quantite = parseFloat(document.getElementById('invQuantite').value); const unite = document.getElementById('invUnite').value.trim(); const prixUnitaire = parseFloat(document.getElementById('invPrixUnitaire').value); if (!designation || !categorie || !quantite || !unite || !prixUnitaire) { showNotification('❌ Remplis tous les champs requis', 'error'); return; } apiPost('addInvendu', { designation, categorie, quantite, unite, prixUnitaire }).then(() => { showNotification('✅ Invendu ajouté', 'success'); closeModal('addInvendu'); loadInvendus(); loadDashboard(); document.getElementById('invDesignation').value = ''; document.getElementById('invQuantite').value = ''; document.getElementById('invPrixUnitaire').value = ''; document.getElementById('invUnite').value = ''; document.getElementById('invImageFile').value = ''; document.getElementById('imagePreview').style.display = 'none'; }).catch(e => showNotification('❌ Erreur: ' + e.message, 'error')); }
-        function markInvenduSold(id, name) { if (confirm('Marquer "' + name + '" comme vendu?')) { apiPost('markInvenduSold', { invenduId: id }).then(() => { showNotification('✅ Marqué comme vendu', 'success'); loadInvendus(); loadDashboard(); }).catch(e => showNotification('❌ Erreur: ' + e.message, 'error')); } }
-        function showNotification(message, type) { const notif = document.createElement('div'); notif.textContent = message; notif.className = 'notification ' + type; document.body.appendChild(notif); setTimeout(() => { notif.style.opacity = '0'; setTimeout(() => notif.remove(), 300); }, 3000); }
-        function openModal(name) { const modals = { 'entry': 'entryModal', 'addInvendu': 'addInvenduModal', 'createProduct': 'createProductModal' }; if (modals[name]) document.getElementById(modals[name]).classList.add('active'); }
-        function closeModal(name) { const modals = { 'entry': 'entryModal', 'addInvendu': 'addInvenduModal', 'createProduct': 'createProductModal' }; if (modals[name]) document.getElementById(modals[name]).classList.remove('active'); }
-        function switchView(view) { currentView = view; document.getElementById('stockView').style.display = view === 'stock' ? 'block' : 'none'; document.getElementById('invendusView').style.display = view === 'invendus' ? 'block' : 'none'; document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active')); event.target.classList.add('active'); }
-        document.getElementById('quantite')?.addEventListener('input', function() { document.getElementById('montantHT').value = ((parseFloat(this.value) || 0) * (parseFloat(document.getElementById('prixUnitaire').value) || 0)).toFixed(2); });
-        document.getElementById('prixUnitaire')?.addEventListener('input', function() { document.getElementById('montantHT').value = ((parseFloat(document.getElementById('quantite').value) || 0) * (parseFloat(this.value) || 0)).toFixed(2); });
-        window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.classList.remove('active'); }
-        setInterval(() => { loadDashboard(); loadAlerts(); loadInvendus(); }, 5*60*1000);
+
+        function apiPost(action, data) {
+            return new Promise((resolve, reject) => {
+                const actionMap = {
+                    addEntry: {
+                        fn: 'apiAddEntry',
+                        args: [data.productId, data.fournisseur, data.date, data.quantite, data.prixUnitaire, '']
+                    },
+                    addProduct: {
+                        fn: 'apiAddProduct',
+                        args: [data.designation, data.categorie, data.unite, data.emplacement]
+                    },
+                    addInvendu: {
+                        fn: 'apiAddInvendu',
+                        args: [data.designation, data.categorie, data.quantite, data.unite, data.prixUnitaire, '']
+                    },
+                    markInvenduSold: {
+                        fn: 'apiMarkInvenduSold',
+                        args: [data.invenduId]
+                    }
+                };
+                const config = actionMap[action];
+                google.script.run
+                    .withSuccessHandler(result => resolve(result))
+                    .withFailureHandler(error => reject(error))
+                    [config.fn](...config.args);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('buildId').textContent = new Date().toLocaleDateString('fr-FR');
+            document.getElementById('entryDate').valueAsDate = new Date();
+            loadDashboard();
+            loadAlerts();
+            loadProductsList();
+            loadInvendus();
+        });
+
+        function loadDashboard() {
+            apiGet('getDashboard').then(data => {
+                document.getElementById('stockReg').textContent = (parseFloat(data['Stock Régulier (€)']) || 0).toFixed(2) + '€';
+                document.getElementById('countProd').textContent = (data['Nombre Produits'] || 0) + ' produits';
+                document.getElementById('stockInv').textContent = (parseFloat(data['Invendus (€)']) || 0).toFixed(2) + '€';
+                document.getElementById('countInv').textContent = (data['Nombre Invendus'] || 0) + ' articles';
+                document.getElementById('totalStock').textContent = ((parseFloat(data['Stock Régulier (€)']) || 0) + (parseFloat(data['Invendus (€)']) || 0)).toFixed(2) + '€';
+            }).catch(e => console.error(e));
+        }
+
+        function loadAlerts() {
+            apiGet('getAlerts').then(data => {
+                let html = '';
+                if (data.ruptures && data.ruptures.length > 0)
+                    html += '<div style="background: #fee; padding: 12px; border-radius: 6px; margin-bottom: 10px;"><strong>🔴 Ruptures (' + data.ruptures.length + ')</strong></div>';
+                if (data.aControler && data.aControler.length > 0)
+                    html += '<div style="background: #fefaed; padding: 12px; border-radius: 6px;"><strong>🟡 À Contrôler (' + data.aControler.length + ')</strong></div>';
+                if (!html) html = '<div class="empty-state">✅ Aucune alerte</div>';
+                document.getElementById('alertsList').innerHTML = html;
+            }).catch(e => console.error(e));
+        }
+
+        function loadProductsList() {
+            return apiGet('getProduits').then(produits => {
+                let html = '<option value="">-- Sélectionne ou crée --</option>';
+                produits.forEach(p => {
+                    html += '<option value="' + p.ID + '">' + p.Désignation + '</option>';
+                });
+                document.getElementById('productInput').innerHTML = html;
+            }).catch(e => console.error(e));
+        }
+
+        function loadInvendus() {
+            apiGet('getInvendus').then(invendus => {
+                let html = '';
+                if (invendus.length === 0) {
+                    html = '<div class="empty-state">Aucun invendu</div>';
+                } else {
+                    html = '<table><thead><tr><th>Désignation</th><th>Catégorie</th><th>Quantité</th><th>Prix</th><th>Actions</th></tr></thead><tbody>';
+                    invendus.forEach(inv => {
+                        html += '<tr><td>' + inv.Désignation + '</td><td>' + inv.Catégorie + '</td><td>' + inv.Quantité + ' ' + inv.Unité + '</td><td>' + (parseFloat(inv['Prix Achat Total']) || 0).toFixed(2) + '€</td><td><button onclick="markInvenduSold(\'' + inv.ID + '\', \'' + inv.Désignation + '\')" style="background: #4CAF50;">✓ Vendu</button></td></tr>';
+                    });
+                    html += '</tbody></table>';
+                }
+                document.getElementById('invendusList').innerHTML = html;
+            }).catch(e => console.error(e));
+        }
+
+        function submitEntry() {
+            const productId = document.getElementById('productInput').value;
+            const fournisseur = document.getElementById('fournisseur').value;
+            const date = document.getElementById('entryDate').value;
+            const quantite = parseFloat(document.getElementById('quantite').value);
+            const prixUnitaire = parseFloat(document.getElementById('prixUnitaire').value);
+
+            if (!productId || !fournisseur || !date || !quantite || !prixUnitaire) {
+                showNotification('❌ Remplis tous les champs', 'error');
+                return;
+            }
+
+            apiPost('addEntry', { productId, fournisseur, date, quantite, prixUnitaire }).then(() => {
+                showNotification('✅ Entrée enregistrée', 'success');
+                closeModal('entry');
+                loadDashboard();
+                loadProductsList();
+                document.getElementById('quantite').value = '';
+                document.getElementById('prixUnitaire').value = '';
+                document.getElementById('montantHT').value = '';
+            }).catch(e => showNotification('❌ Erreur: ' + e.message, 'error'));
+        }
+
+        function submitCreateProduct() {
+            const designation = document.getElementById('newProdDesignation').value.trim();
+            const categorie = document.getElementById('newProdCategorie').value;
+            const unite = document.getElementById('newProdUnite').value.trim();
+            const emplacement = document.getElementById('newProdEmplacement').value.trim();
+
+            if (!designation || !categorie || !unite) {
+                showNotification('❌ Remplis les champs requis', 'error');
+                return;
+            }
+
+            apiPost('addProduct', { designation, categorie, unite, emplacement }).then(result => {
+                showNotification('✅ Produit créé!', 'success');
+                closeModal('createProduct');
+
+                // ⏳ IMPORTANTE: Attends 1 seconde que la feuille se mette à jour
+                setTimeout(() => {
+                    loadProductsList().then(() => {
+                        // ✅ Auto-sélectionne le nouveau produit
+                        document.getElementById('productInput').value = result.id;
+                        console.log('✅ Produit ' + result.id + ' créé et sélectionné');
+                    });
+                }, 1000);
+
+                // Nettoie les champs
+                document.getElementById('newProdDesignation').value = '';
+                document.getElementById('newProdCategorie').value = '';
+                document.getElementById('newProdUnite').value = '';
+                document.getElementById('newProdEmplacement').value = '';
+            }).catch(e => showNotification('❌ Erreur: ' + e.message, 'error'));
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('imagePreview').style.display = 'block';
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('previewText').textContent = file.name;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function sendInvenduData() {
+            const designation = document.getElementById('invDesignation').value.trim();
+            const categorie = document.getElementById('invCategorie').value;
+            const quantite = parseFloat(document.getElementById('invQuantite').value);
+            const unite = document.getElementById('invUnite').value.trim();
+            const prixUnitaire = parseFloat(document.getElementById('invPrixUnitaire').value);
+
+            if (!designation || !categorie || !quantite || !unite || !prixUnitaire) {
+                showNotification('❌ Remplis tous les champs requis', 'error');
+                return;
+            }
+
+            apiPost('addInvendu', { designation, categorie, quantite, unite, prixUnitaire }).then(() => {
+                showNotification('✅ Invendu ajouté', 'success');
+                closeModal('addInvendu');
+                loadInvendus();
+                loadDashboard();
+                document.getElementById('invDesignation').value = '';
+                document.getElementById('invQuantite').value = '';
+                document.getElementById('invPrixUnitaire').value = '';
+                document.getElementById('invUnite').value = '';
+                document.getElementById('invImageFile').value = '';
+                document.getElementById('imagePreview').style.display = 'none';
+            }).catch(e => showNotification('❌ Erreur: ' + e.message, 'error'));
+        }
+
+        function markInvenduSold(id, name) {
+            if (confirm('Marquer "' + name + '" comme vendu?')) {
+                apiPost('markInvenduSold', { invenduId: id }).then(() => {
+                    showNotification('✅ Marqué comme vendu', 'success');
+                    loadInvendus();
+                    loadDashboard();
+                }).catch(e => showNotification('❌ Erreur: ' + e.message, 'error'));
+            }
+        }
+
+        function showNotification(message, type) {
+            const notif = document.createElement('div');
+            notif.textContent = message;
+            notif.className = 'notification ' + type;
+            document.body.appendChild(notif);
+            setTimeout(() => {
+                notif.style.opacity = '0';
+                setTimeout(() => notif.remove(), 300);
+            }, 3000);
+        }
+
+        function openModal(name) {
+            const modals = {
+                'entry': 'entryModal',
+                'addInvendu': 'addInvenduModal',
+                'createProduct': 'createProductModal'
+            };
+            if (modals[name]) document.getElementById(modals[name]).classList.add('active');
+        }
+
+        function closeModal(name) {
+            const modals = {
+                'entry': 'entryModal',
+                'addInvendu': 'addInvenduModal',
+                'createProduct': 'createProductModal'
+            };
+            if (modals[name]) document.getElementById(modals[name]).classList.remove('active');
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.getElementById('stockView').style.display = view === 'stock' ? 'block' : 'none';
+            document.getElementById('invendusView').style.display = view === 'invendus' ? 'block' : 'none';
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        document.getElementById('quantite')?.addEventListener('input', function() {
+            document.getElementById('montantHT').value = ((parseFloat(this.value) || 0) * (parseFloat(document.getElementById('prixUnitaire').value) || 0)).toFixed(2);
+        });
+
+        document.getElementById('prixUnitaire')?.addEventListener('input', function() {
+            document.getElementById('montantHT').value = ((parseFloat(document.getElementById('quantite').value) || 0) * (parseFloat(this.value) || 0)).toFixed(2);
+        });
+
+        window.onclick = function(e) {
+            if (e.target.classList.contains('modal')) e.target.classList.remove('active');
+        }
+
+        setInterval(() => {
+            loadDashboard();
+            loadAlerts();
+            loadInvendus();
+        }, 5 * 60 * 1000);
     </script>
 </body>
 </html>
