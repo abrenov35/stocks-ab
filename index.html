@@ -1140,8 +1140,8 @@
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbyL76EHxlFpQL_KG3ZZxkCIQJWG2Fc3xZvm6-oFEQziU8_u8AU8zi8nsO5iNxqjtnl_/exec';
-        const APP_VERSION = 'V1.3.0';
+        const API_URL = '';  // URLs relatives (Google Apps Script = même domaine!)
+        const APP_VERSION = 'V1.3.0 - GAS';
         const BUILD_ID = new Date().toISOString().slice(0, 10) + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
         
         let productsData = [];
@@ -1155,7 +1155,7 @@
         async function apiPost(action, data) {
           try {
             const response = await fetch(
-              `${API_URL}?action=${encodeURIComponent(action)}`,
+              `?action=${encodeURIComponent(action)}`,
               {
                 method: "POST",
                 headers: {
@@ -1185,7 +1185,7 @@
         async function apiGet(action) {
           try {
             const response = await fetch(
-              `${API_URL}?action=${encodeURIComponent(action)}`
+              `?action=${encodeURIComponent(action)}`
             );
 
             if (!response.ok) {
